@@ -100,6 +100,7 @@ class Repo(object):
         """
 
         with with_branch(output, self, self.branch):
+            self.git_fetch(output)
             self.git_pull(output)
             self.git_push(output)
             self.install(output)
@@ -125,6 +126,17 @@ class Repo(object):
         """
 
         output.send(self.handle.checkout(branch))
+
+    def git_fetch(self, output):
+        """
+        Perform a "git fetch" operation from the default remote.
+
+        :param output: An Output object to which the command outputs
+                       will be sent.
+        """
+
+        output.send("Fetching changes from origin")
+        output.send(self.handle.fetch())
 
     def git_pull(self, output):
         """

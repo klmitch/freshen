@@ -93,11 +93,12 @@ class TestRepo(unittest2.TestCase):
     @mock.patch('os.path.expanduser',
                 side_effect=lambda x: '/home/test%s' % x[1:])
     @mock.patch.object(freshen, 'with_branch', return_value=mock.MagicMock())
+    @mock.patch.object(freshen.Repo, 'git_fetch')
     @mock.patch.object(freshen.Repo, 'git_pull')
     @mock.patch.object(freshen.Repo, 'git_push')
     @mock.patch.object(freshen.Repo, 'install')
     def test_freshen(self, mock_install, mock_git_push, mock_git_pull,
-                     mock_with_branch, mock_expanduser):
+                     mock_git_fetch, mock_with_branch, mock_expanduser):
         repo = freshen.Repo('repo')
 
         repo.freshen('output')
@@ -106,6 +107,7 @@ class TestRepo(unittest2.TestCase):
         mock_with_branch.return_value.__enter__.assert_called_once_with()
         mock_with_branch.return_value.__exit__.assert_called_once_with(
             None, None, None)
+        mock_git_fetch.assert_called_once_with('output')
         mock_git_pull.assert_called_once_with('output')
         mock_git_push.assert_called_once_with('output')
         mock_install.assert_called_once_with('output')
@@ -136,6 +138,23 @@ class TestRepo(unittest2.TestCase):
 
         output.send.assert_called_once_with('checkout return value')
         repo.handle.checkout.assert_called_once_with('branch')
+
+    @mock.patch('os.path.expanduser',
+                side_effect=lambda x: '/home/test%s' % x[1:])
+    @mock.patch.object(freshen.Repo, 'handle', mock.Mock(**{
+        'fetch.return_value': 'fetch return value',
+    }))
+    def test_git_fetch(self, mock_expanduser):
+        output = mock.Mock()
+        repo = freshen.Repo('repo')
+
+        repo.git_fetch(output)
+
+        output.send.assert_has_calls([
+            mock.call("Fetching changes from origin"),
+            mock.call("fetch return value"),
+        ])
+        repo.handle.fetch.assert_called_once_with()
 
     @mock.patch('os.path.expanduser',
                 side_effect=lambda x: '/home/test%s' % x[1:])
